@@ -7,26 +7,28 @@
 /*jslint regexp: true, nomen: true, sloppy: true */
 /*global window, navigator, document, importScripts, setTimeout, opera */
 
+// 这 3 个标识符在外部可以使用，在全局作用域
 var requirejs, require, define;
+
 (function (global, setTimeout) {
     var req, s, head, baseElement, dataMain, src,
         interactiveScript, currentlyAddingScript, mainScript, subPath,
         version = '2.3.6',
-        commentRegExp = /\/\*[\s\S]*?\*\/|([^:"'=]|^)\/\/.*$/mg,
-        cjsRequireRegExp = /[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\)/g,
-        jsSuffixRegExp = /\.js$/,
-        currDirRegExp = /^\.\//,
-        op = Object.prototype,
-        ostring = op.toString,
-        hasOwn = op.hasOwnProperty,
+        commentRegExp = /\/\*[\s\S]*?\*\/|([^:"'=]|^)\/\/.*$/mg, // 匹配代码中的注释
+        cjsRequireRegExp = /[^.]\s*require\s*\(\s*["']([^'"\s]+)["']\s*\)/g, // 匹配 require('xxx') require("xxx")
+        jsSuffixRegExp = /\.js$/, // 匹配 .js 后缀
+        currDirRegExp = /^\.\//, // 匹配 ./ 即当前目录
+        op = Object.prototype, // 存储 Object.prototype 指向的原型对象
+        ostring = op.toString, // 存储 toString 函数
+        hasOwn = op.hasOwnProperty, // 存储 hasOwnProperty 函数
         isBrowser = !!(typeof window !== 'undefined' && typeof navigator !== 'undefined' && window.document),
-        isWebWorker = !isBrowser && typeof importScripts !== 'undefined',
+        isWebWorker = !isBrowser && typeof importScripts !== 'undefined', // web worker 是什么？
         //PS3 indicates loaded and complete, but need to wait for complete
         //specifically. Sequence is 'loading', 'loaded', execution,
         // then 'complete'. The UA check is unfortunate, but not sure how
         //to feature test w/o causing perf issues.
         readyRegExp = isBrowser && navigator.platform === 'PLAYSTATION 3' ?
-                      /^complete$/ : /^(complete|loaded)$/,
+                      /^complete$/ : /^(complete|loaded)$/, // playstation 3 是个什么鬼？ps3 游戏机浏览器中打开的？
         defContextName = '_',
         //Oh the tragedy, detecting opera. See the usage of isOpera for reason.
         isOpera = typeof opera !== 'undefined' && opera.toString() === '[object Opera]',
@@ -153,7 +155,7 @@ var requirejs, require, define;
         each(value.split('.'), function (part) {
             g = g[part];
         });
-        return g;
+        return g; // -> 结果 global.a.b.c
     }
 
     /**
@@ -185,6 +187,8 @@ var requirejs, require, define;
             //Do not overwrite an existing requirejs instance.
             return;
         }
+
+        // 把 requirejs 引用回收。requirejs 是全局变量，可能在其他地方被修改，猜测设置成 undefined 是为了防止被修改
         cfg = requirejs;
         requirejs = undefined;
     }
@@ -1765,26 +1769,29 @@ var requirejs, require, define;
 
         //Find the right context, use default
         var context, config,
-            contextName = defContextName;
+            contextName = defContextName; // 默认上下文
 
+        // 依赖既不是数组，又不是字符串
         // Determine if have config object in the call.
         if (!isArray(deps) && typeof deps !== 'string') {
             // deps is a config object
             config = deps;
             if (isArray(callback)) {
                 // Adjust args if there are dependencies
+                // 支持这种调用方式：requirejs({...}, [...], callback, errback)，就没有 optional 这个参数了
                 deps = callback;
                 callback = errback;
                 errback = optional;
             } else {
-                deps = [];
+                deps = []; // 没有依赖
             }
         }
 
         if (config && config.context) {
-            contextName = config.context;
+            contextName = config.context; // 覆盖默认上下文，这个 contextName，到底有什么用？
         }
 
+        // contexts 对象，在这个文件的最开始处定义，contexts = {}
         context = getOwn(contexts, contextName);
         if (!context) {
             context = contexts[contextName] = req.s.newContext(contextName);
@@ -1794,6 +1801,8 @@ var requirejs, require, define;
             context.configure(config);
         }
 
+        // 在这个 context 上调用 require 函数
+        // end@09202225
         return context.require(deps, callback, errback);
     };
 
