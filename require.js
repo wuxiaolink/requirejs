@@ -196,10 +196,11 @@ var requirejs, require, define;
     //Allow for a require config object
     if (typeof require !== 'undefined' && !isFunction(require)) {
         //assume it is a config object.
-        cfg = require;
+        cfg = require; // 那全局作用域中的 require 对象就会覆盖 requirejs 对象
         require = undefined;
     }
 
+    // 根据名称创建一个新的上下文
     function newContext(contextName) {
         var inCheckLoaded, Module, context, handlers,
             checkLoadedTimeoutId,
@@ -1793,11 +1794,11 @@ var requirejs, require, define;
 
         // contexts 对象，在这个文件的最开始处定义，contexts = {}
         context = getOwn(contexts, contextName);
-        if (!context) {
-            context = contexts[contextName] = req.s.newContext(contextName);
+        if (!context) { // contexts[contextName] 的值
+            context = contexts[contextName] = req.s.newContext(contextName); // newContext 函数？
         }
 
-        if (config) {
+        if (config) { // 如果调用 requirejs(...) 传入了 config 对象，则调用 configure 函数
             context.configure(config);
         }
 
@@ -1837,7 +1838,7 @@ var requirejs, require, define;
     req.jsExtRegExp = /^\/|:|\?|\.js$/;
     req.isBrowser = isBrowser;
     s = req.s = {
-        contexts: contexts,
+        contexts: contexts, // {}
         newContext: newContext
     };
 
@@ -1882,7 +1883,7 @@ var requirejs, require, define;
      * Creates the node for the load command. Only used in browser envs.
      */
     req.createNode = function (config, moduleName, url) {
-        var node = config.xhtml ?
+        var node = config.xhtml ? // xhtml: true
                 document.createElementNS('http://www.w3.org/1999/xhtml', 'html:script') :
                 document.createElement('script');
         node.type = config.scriptType || 'text/javascript';
@@ -1999,6 +2000,8 @@ var requirejs, require, define;
         }
     };
 
+    // @pzl
+    // @end 2018/09/21 13:00
     function getInteractiveScript() {
         if (interactiveScript && interactiveScript.readyState === 'interactive') {
             return interactiveScript;
@@ -2012,9 +2015,12 @@ var requirejs, require, define;
         return interactiveScript;
     }
 
+    // 遍历所有的 script 节点，直到获取到 data-main 属性的 script 节点
     //Look for a data-main script attribute, which could also adjust the baseUrl.
     if (isBrowser && !cfg.skipDataMain) {
         //Figure out baseUrl. Get it from the script tag with require.js in it.
+
+        // 倒序遍历，找最后一个 data-main 属性
         eachReverse(scripts(), function (script) {
             //Set the 'head' where we can append children by
             //using the script's parent.
@@ -2033,7 +2039,7 @@ var requirejs, require, define;
                 //Set final baseUrl if there is not already an explicit one,
                 //but only do so if the data-main value is not a loader plugin
                 //module ID.
-                if (!cfg.baseUrl && mainScript.indexOf('!') === -1) {
+                if (!cfg.baseUrl && mainScript.indexOf('!') === -1) { // @nu indexOf !
                     //Pull off the directory of data-main for use as the
                     //baseUrl.
                     src = mainScript.split('/');
@@ -2041,13 +2047,20 @@ var requirejs, require, define;
                     subPath = src.length ? src.join('/')  + '/' : './';
 
                     cfg.baseUrl = subPath;
+
+                    // /a/b/c.js -> cfg.baseUrl = /a/b/
+                    // mainScript -> c.js
                 }
+
+                // @end 2018/09/21 14:57
 
                 //Strip off any trailing .js since mainScript is now
                 //like a module name.
+                // index.js -> index
                 mainScript = mainScript.replace(jsSuffixRegExp, '');
 
                 //If mainScript is still a path, fall back to dataMain
+                // @nu
                 if (req.jsExtRegExp.test(mainScript)) {
                     mainScript = dataMain;
                 }
@@ -2079,7 +2092,7 @@ var requirejs, require, define;
         }
 
         //This module may not have dependencies
-        if (!isArray(deps)) {
+        if (!isArray(deps)) { // 支持这种 define('a', function...) 和 define(function...)
             callback = deps;
             deps = null;
         }
@@ -2091,12 +2104,12 @@ var requirejs, require, define;
             //Remove comments from the callback string,
             //look for require calls, and pull them into the dependencies,
             //but only if there are function args.
-            if (callback.length) {
+            if (callback.length) { // 回调函数的参数数量。@nu
                 callback
                     .toString()
-                    .replace(commentRegExp, commentReplace)
+                    .replace(commentRegExp, commentReplace) // 替换（清除）函数字符串中的注释内容
                     .replace(cjsRequireRegExp, function (match, dep) {
-                        deps.push(dep);
+                        deps.push(dep); // define 回调函数中通过调用 require 函数获取依赖，这里提前解析出了依赖的模块
                     });
 
                 //May be a CommonJS thing even without require calls, but still
@@ -2105,6 +2118,8 @@ var requirejs, require, define;
                 //REQUIRES the function to expect the CommonJS variables in the
                 //order listed below.
                 deps = (callback.length === 1 ? ['require'] : ['require', 'exports', 'module']).concat(deps);
+
+                // 类似这种定义模块的方式：define(function(require, exports, module) {...})
             }
         }
 
